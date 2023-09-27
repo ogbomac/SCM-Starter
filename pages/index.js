@@ -1,15 +1,17 @@
 import {useState, useEffect} from "react";
 import {ethers} from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import abi from "./contract/abi.json"
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
   const [account, setAccount] = useState(undefined);
-  const [atm, setATM] = useState(undefined);
-  const [balance, setBalance] = useState(undefined);
+  const [contract, setContract] = useState(undefined);
+  const [x, setX] = useState(undefined);
+  const [y, setY] = useState(undefined);
+  const [z, setZ] = useState(undefined);
+  const [value, setValue] = useState(undefined);
 
-  const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-  const atmABI = atm_abi.abi;
+  const contractAddress = "0xA1f037F59adeE942a74b6130D5b4C2deE962ffc1";
 
   const getWallet = async() => {
     if (window.ethereum) {
@@ -42,36 +44,40 @@ export default function HomePage() {
     handleAccount(accounts);
     
     // once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getContract();
   };
 
-  const getATMContract = () => {
+  const getContract = () => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
-    const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
+    const calculator = new ethers.Contract(contractAddress, abi, signer);
  
-    setATM(atmContract);
+    setContract(calculator);
   }
 
-  const getBalance = async() => {
-    if (atm) {
-      setBalance((await atm.getBalance()).toNumber());
+  const getValue = async() => {
+    if (contract) {
+      setValue((await contract.value()).toNumber());
     }
   }
 
-  const deposit = async() => {
-    if (atm) {
-      let tx = await atm.deposit(1);
-      await tx.wait()
-      getBalance();
+  const add = async(x, y) => {
+    if (contract) {
+      setZ((await contract.add(x,y)).toNumber());
     }
   }
 
-  const withdraw = async() => {
-    if (atm) {
-      let tx = await atm.withdraw(1);
+  const subtract = async(x, y) => {
+    if (contract) {
+      setZ((await contract.subtract(x,y)).toNumber());
+    }
+  }
+
+  const save = async(z) => {
+    if (contract) {
+      let tx = await contract.save(z);
       await tx.wait()
-      getBalance();
+      getValue();
     }
   }
 
@@ -86,16 +92,28 @@ export default function HomePage() {
       return <button onClick={connectAccount}>Please connect your Metamask wallet</button>
     }
 
-    if (balance == undefined) {
-      getBalance();
+    if (value == undefined) {
+      getValue();
     }
 
     return (
       <div>
         <p>Your Account: {account}</p>
-        <p>Your Balance: {balance}</p>
-        <button onClick={deposit}>Deposit 1 ETH</button>
-        <button onClick={withdraw}>Withdraw 1 ETH</button>
+        <p>Your value: {value}</p>
+        {z == undefined ? <p>no calculation yet</p> : <p> the result is {z}</p>     }
+        <div>
+          <label>x value</label>
+          <input value={x} onChange={(event) => {setX(event.target.value)}}></input>
+        </div>
+        <div>
+          <label>y value</label>
+          <input value={y} onChange={(event) => {setY(event.target.value)}}></input>
+        </div>
+        <button onClick={() => {add(x, y)}}> Add the x and y</button>
+
+        <button onClick={() => {subtract(x,y) }}> subtract y from x</button>
+
+        <div><button onClick={() => {save(z)}}> save the result</button></div>
       </div>
     )
   }
@@ -104,7 +122,7 @@ export default function HomePage() {
 
   return (
     <main className="container">
-      <header><h1>Welcome to the Metacrafters ATM!</h1></header>
+      <header><h1>Welcome to omac's calculator app!</h1></header>
       {initUser()}
       <style jsx>{`
         .container {
